@@ -5,6 +5,7 @@ SANDBOX_PATH = os.environ.get("AGENTOLUS_SANDBOX", os.path.join(os.path.expandus
 MEMORY_FILE = os.path.join(SANDBOX_PATH, "memory.json")
 BACKUP_DIR = os.path.join(SANDBOX_PATH, "_backup")
 LOG_FILE = os.path.join(SANDBOX_PATH, "execution.log")
+CWD_FILE = os.path.join(SANDBOX_PATH, ".cwd")  # persists current dir across commands
 
 os.makedirs(SANDBOX_PATH, exist_ok=True)
 os.makedirs(BACKUP_DIR, exist_ok=True)
@@ -17,14 +18,112 @@ def log(msg, level="INFO"):
         f.write(line + "\n")
 
 
+def get_cwd():
+    """Return the current sandbox-relative working directory."""
+    if os.path.exists(CWD_FILE):
+        try:
+            rel = open(CWD_FILE).read().strip()
+            full = os.path.normpath(os.path.join(SANDBOX_PATH, rel))
+            # Safety: must stay inside sandbox
+            if full.startswith(os.path.normpath(SANDBOX_PATH)) and os.path.isdir(full):
+                return full
+        except Exception:
+            pass
+    return SANDBOX_PATH
+
+
+def set_cwd(full_path):
+    """Persist a new CWD (must be inside sandbox)."""
+    full_path = os.path.normpath(full_path)
+    sandbox = os.path.normpath(SANDBOX_PATH)
+    if not full_path.startswith(sandbox):
+        raise ValueError(f"Path escapes sandbox: {full_path}")
+    rel = os.path.relpath(full_path, sandbox)
+    with open(CWD_FILE, "w") as f:
+        f.write(rel)
+
+
+def cwd_display():
+    """Return a short display string like ~/agentolus_sandbox/agentOne"""
+    full = get_cwd()
+    sandbox = os.path.normpath(SANDBOX_PATH)
+    rel = os.path.relpath(full, sandbox)
+    if rel == ".":
+        return os.path.basename(sandbox)
+    return os.path.basename(sandbox) + "/" + rel.replace("\\", "/")
+
+
+def _sanitize_path(name):
+    """Strip shell metacharacters from a path string."""
+    name = str(name).split('&')[0].split('|')[0].split(';')[0].split('>')[0].split('<')[0]
+    name = re.sub(r'[^\w /.\\ -]', '', name).strip().strip('/')
+    return name or "unnamed"
+
+_sanitize_name = _sanitize_path  # alias used in builtins
+
+
+class _SanitizePaths(ast.NodeTransformer):
+    """AST pass: sanitize string args to all filesystem-touching calls."""
+    _PATH_FUNCS = {
+        (None, '__cd__'), (None, 'open'),
+        ('os', 'makedirs'), ('os', 'remove'), ('os', 'rmdir'), ('os', 'rename'),
+        ('os', 'listdir'), ('os.path', 'join'), ('os.path', 'exists'),
+        ('shutil', 'rmtree'), ('shutil', 'move'), ('shutil', 'copy2'),
+        ('pathlib', 'Path'),
+    }
+
+    def _is_path_call(self, node):
+        if isinstance(node.func, ast.Name):
+            return (None, node.func.id) in self._PATH_FUNCS
+        if isinstance(node.func, ast.Attribute):
+            if isinstance(node.func.value, ast.Name):
+                return (node.func.value.id, node.func.attr) in self._PATH_FUNCS
+        return False
+
+    def visit_Call(self, node):
+        self.generic_visit(node)
+        if self._is_path_call(node) and node.args:
+            first = node.args[0]
+            if isinstance(first, ast.Constant) and isinstance(first.value, str):
+                cleaned = _sanitize_path(first.value)
+                if cleaned != first.value:
+                    node.args[0] = ast.Constant(value=cleaned)
+        return node
+
+
+def _sanitize_code(code):
+    """Run AST sanitization pass over generated code before exec."""
+    try:
+        tree = ast.parse(code)
+        tree = _SanitizePaths().visit(tree)
+        ast.fix_missing_locations(tree)
+        return ast.unparse(tree)
+    except Exception:
+        return code
+
+
+def _repair_code(code):
+    """Auto-fix common model mistakes before execution."""
+    lines = code.split('\n')
+    new_lines = []
+    makedirs_done = set()
+    for line in lines:
+        m = re.match(r'.*open\s*\(\s*["\']([^"\']+/[^"\']+)["\']\s*,\s*["\'][wa]["\']', line)
+        if m:
+            folder = os.path.dirname(m.group(1))
+            if folder and folder not in makedirs_done:
+                new_lines.append(f"import os; os.makedirs({repr(folder)}, exist_ok=True)  # auto-inserted")
+                makedirs_done.add(folder)
+        new_lines.append(line)
+    return '\n'.join(new_lines)
+
+
 def _maybe_wrap_last_expr(code):
-    """REPL-style: if last statement is a bare expression, wrap it in print().
-    Skips if it is already a print() call to avoid print(print(...)) -> None."""
+    """REPL-style: wrap bare last expression in print(), skip if already print()."""
     try:
         tree = ast.parse(code)
         if tree.body and isinstance(tree.body[-1], ast.Expr):
             last = tree.body[-1]
-            # Skip if already a print() call
             if (isinstance(last.value, ast.Call) and
                     isinstance(last.value.func, ast.Name) and
                     last.value.func.id == "print"):
@@ -36,6 +135,82 @@ def _maybe_wrap_last_expr(code):
     except Exception:
         pass
     return code
+
+
+def _bash_to_python(bash_code):
+    """Convert simple bash/shell commands to Python equivalents."""
+    python_lines = ["import os, shutil"]
+    for line in bash_code.strip().splitlines():
+        line = line.strip()
+        if not line or line.startswith('#'):
+            continue
+        # cd
+        m = re.match(r'cd\s+(.+)', line)
+        if m:
+            target = m.group(1).strip().strip('"\'')
+            python_lines.append(f"__cd__({repr(target)})")
+            continue
+        # touch
+        m = re.match(r'touch\s+(.+)', line)
+        if m:
+            f = m.group(1).strip()
+            python_lines.append(f"open({repr(f)}, 'a').close()")
+            python_lines.append(f"print('Created: {f}')")
+            continue
+        # mkdir
+        m = re.match(r'mkdir(?:\s+-p)?\s+(.+)', line)
+        if m:
+            d = m.group(1).strip()
+            python_lines.append(f"os.makedirs({repr(d)}, exist_ok=True)")
+            python_lines.append(f"print('Created: {d}')")
+            continue
+        # echo "text" > file
+        m = re.match(r'echo\s+"([^"]+)"\s*>\s*(.+)', line)
+        if m:
+            content, f = m.group(1), m.group(2).strip()
+            python_lines.append(f"open({repr(f)}, 'w').write({repr(content)})")
+            python_lines.append(f"print('Created: {f}')")
+            continue
+        # echo text > file
+        m = re.match(r'echo\s+(.+?)\s*>\s*(.+)', line)
+        if m:
+            content, f = m.group(1).strip(), m.group(2).strip()
+            python_lines.append(f"open({repr(f)}, 'w').write({repr(content)})")
+            python_lines.append(f"print('Created: {f}')")
+            continue
+        # rm
+        m = re.match(r'rm\s+(?:-rf?\s+)?(.+)', line)
+        if m:
+            target = m.group(1).strip()
+            python_lines.append(f"shutil.rmtree({repr(target)}) if os.path.isdir({repr(target)}) else os.remove({repr(target)})")
+            python_lines.append(f"print('Deleted: {target}')")
+            continue
+        # ls / dir
+        if re.match(r'^ls$|^dir$|^ls\s|^dir\s', line):
+            python_lines.append("print('\\n'.join(os.listdir('.')))")
+            continue
+        # mv
+        m = re.match(r'mv\s+(\S+)\s+(\S+)', line)
+        if m:
+            src, dst = m.group(1), m.group(2)
+            python_lines.append(f"shutil.move({repr(src)}, {repr(dst)})")
+            python_lines.append(f"print('Moved: {src} -> {dst}')")
+            continue
+        # cp
+        m = re.match(r'cp\s+(?:-r\s+)?(\S+)\s+(\S+)', line)
+        if m:
+            src, dst = m.group(1), m.group(2)
+            python_lines.append(f"shutil.copy2({repr(src)}, {repr(dst)})")
+            python_lines.append(f"print('Copied: {src} -> {dst}')")
+            continue
+        # cat
+        m = re.match(r'cat\s+(.+)', line)
+        if m:
+            f = m.group(1).strip()
+            python_lines.append(f"print(open({repr(f)}).read())")
+            continue
+        python_lines.append(f"print('[WARN] Could not convert: {line}')")
+    return '\n'.join(python_lines)
 
 
 def run_code(code):
@@ -50,6 +225,27 @@ def run_code(code):
     def safe_import(name, *args, **kwargs):
         return mod_map.get(name, importlib.import_module(name))
 
+    # __cd__ handler — changes persistent CWD within sandbox
+    def __cd__(target):
+        # Sanitize: strip anything after whitespace or shell metacharacters
+        target = _sanitize_name(str(target))
+        current = get_cwd()
+        if target in ("~", "/", ""):
+            new = SANDBOX_PATH
+        elif target == "..":
+            new = os.path.dirname(current)
+            if not os.path.normpath(new).startswith(os.path.normpath(SANDBOX_PATH)):
+                new = SANDBOX_PATH  # don't escape sandbox
+        else:
+            new = os.path.normpath(os.path.join(current, target))
+        if not os.path.isdir(new):
+            print(f"cd: {repr(target)}: No such directory")
+            return
+        set_cwd(new)
+        os.chdir(new)
+        rel = os.path.relpath(new, SANDBOX_PATH).replace("\\", "/")
+        print(f"📂 {rel if rel != '.' else '(sandbox root)'}") 
+
     builtins = {
         "print": print,
         "len": len, "open": open, "str": str, "int": int, "float": float,
@@ -63,14 +259,18 @@ def run_code(code):
         "re": mod_map["re"], "pathlib": mod_map["pathlib"],
         "shutil": mod_map["shutil"], "time": mod_map["time"],
         "__import__": safe_import,
+        "__cd__": __cd__,
+        "_sanitize": _sanitize_name,
     }
 
+    code = _sanitize_code(code)  # AST pass: strip injection from path args
+    code = _repair_code(code)
     code = _maybe_wrap_last_expr(code)
     sandbox_globals = {"__builtins__": builtins, "SANDBOX": SANDBOX_PATH}
 
     prev_cwd = os.getcwd()
     try:
-        os.chdir(SANDBOX_PATH)
+        os.chdir(get_cwd())  # use persistent CWD, not always sandbox root
         output = io.StringIO()
         with contextlib.redirect_stdout(output):
             exec(code, sandbox_globals)
@@ -83,41 +283,93 @@ def run_code(code):
 
 
 def extract_code(text):
-    """Extract Python code block. Rejects bash/shell blocks and asks model to retry."""
+    """Extract Python code. Auto-converts bash/powershell blocks to Python."""
     text = text.strip()
 
-    # Check for bash/shell blocks explicitly — reject them
-    bash_pattern = r'```(?:bash|shell|sh|cmd|powershell)\s*(.*?)```'
-    if re.search(bash_pattern, text, re.DOTALL | re.IGNORECASE):
-        return None  # Caller will report NO ACTIONABLE CODE
+    bash_match = re.search(r'```(?:bash|shell|sh|cmd|powershell)\s*(.*?)```', text, re.DOTALL | re.IGNORECASE)
+    if bash_match:
+        raw_block = bash_match.group(1)
+        # PowerShell here-string
+        ps_here = re.search(r'@"\s*\n(.*?)\n"@\s*\|\s*Set-Content\s+-Path\s+"([^"]+)"', raw_block, re.DOTALL)
+        if ps_here:
+            file_content = ps_here.group(1)
+            filename = ps_here.group(2)
+            folder = os.path.dirname(filename)
+            lines = []
+            if folder:
+                lines.append(f"import os; os.makedirs({repr(folder)}, exist_ok=True)")
+            lines.append(f"with open({repr(filename)}, 'w', encoding='utf-8') as f:")
+            lines.append(f"    f.write({repr(file_content)})")
+            lines.append(f"print('Created: {filename}')")
+            return "\n".join(lines)
+        converted = _bash_to_python(raw_block)
+        return converted if converted.strip() else None
 
-    patterns = [r'```python\s*(.*?)```', r'```\s*(.*?)```']
-    for pattern in patterns:
+    for pattern in [r'```python\s*(.*?)```', r'```\s*(.*?)```']:
         match = re.search(pattern, text, re.DOTALL | re.IGNORECASE)
         if match:
             candidate = match.group(1).strip()
-            lines = [line for line in candidate.splitlines() if line.strip() and not line.strip().startswith('#')]
+            lines = [l for l in candidate.splitlines() if l.strip() and not l.strip().startswith('#')]
             if lines:
                 return "\n".join(lines).strip()
     return None
 
 
 def load_system_prompt():
-    content = f"""You are AgentolusLiteCoder — a pure Python execution agent.
-Sandbox directory: {SANDBOX_PATH}
-Working directory during execution: {SANDBOX_PATH}
+    cwd = get_cwd()
+    rel = os.path.relpath(cwd, SANDBOX_PATH).replace("\\", "/")
+    cwd_display_str = f"{os.path.basename(SANDBOX_PATH)}/{rel}" if rel != "." else os.path.basename(SANDBOX_PATH)
 
-Output ONLY a Python code block. No explanations. No prose.
+    content = f"""You are a silent Python code execution machine. You have ONE job.
 
-STRICT RULES:
-- ONLY output ```python ... ``` blocks — NEVER use ```bash, ```shell, ```cmd or any other language
-- There is no shell, no terminal, no bash — only Python
-- Always use print() to show any result — never leave expressions bare
-- Always use os.makedirs(path, exist_ok=True) before writing files in subdirectories
-- Use relative paths (they resolve inside the sandbox automatically)
-- For ANY file/folder task: use os, pathlib, shutil — not shell commands
+SANDBOX: {SANDBOX_PATH}
+CURRENT DIR: {cwd} (display: {cwd_display_str})
 
+═══════════════════════════════════════════════
+OUTPUT FORMAT — ABSOLUTE RULE, NO EXCEPTIONS:
+═══════════════════════════════════════════════
+Respond with ONLY a ```python ... ``` block. Nothing else.
+
+═══════════════════════════════════════════
+CODE RULES:
+═══════════════════════════════════════════
+- Use __cd__("folder") to change directory — it persists across commands
+- __cd__("..") goes up, __cd__("~") returns to sandbox root
+- ALWAYS use print() to show results
+- ALWAYS use os.makedirs(parent, exist_ok=True) before writing into subfolders
+- Relative paths resolve from CURRENT DIR (not sandbox root)
+- NEVER use bash, shell, touch, echo — only Python
+- NEVER put shell operators (&& | ; > <) inside filenames or __cd__ arguments
+- Folder/file names must be simple: letters, digits, dots, dashes, underscores only
+- __cd__ takes ONE simple folder name only: __cd__("myfolder") not __cd__("folder && cmd")
+
+═══════════════════════════════════════════
 EXAMPLES:
+═══════════════════════════════════════════
+
+Navigate into folder:
+```python
+__cd__("agentOne")
+```
+
+Go up:
+```python
+__cd__("..")
+```
+
+Create file in current dir:
+```python
+with open('hello.txt', 'w') as f:
+    f.write('Hello!')
+print('Created: hello.txt')
+```
+
+Create folder and enter it:
+```python
+import os
+os.makedirs('newFolder', exist_ok=True)
+__cd__("newFolder")
+```
 
 List files:
 ```python
@@ -125,47 +377,18 @@ import os
 print('\\n'.join(os.listdir('.')))
 ```
 
-Create folder:
-```python
-import os
-os.makedirs('test', exist_ok=True)
-print('Created: test')
-```
-
-Create file in subfolder:
-```python
-import os
-os.makedirs('test', exist_ok=True)
-with open('test/test.txt', 'w') as f:
-    f.write('hello')
-print('Created: test/test.txt')
-```
-
-Move/rename:
-```python
-import shutil
-shutil.move('old.txt', 'new.txt')
-print('Moved: old.txt -> new.txt')
-```
-
 Delete file:
 ```python
 import os
-os.remove('file.txt')
-print('Deleted: file.txt')
+os.remove('hello.txt')
+print('Deleted: hello.txt')
 ```
 
-Delete folder (with contents):
+Delete folder:
 ```python
 import shutil
-shutil.rmtree('foldername')
-print('Deleted: foldername')
-```
-
-Read file:
-```python
-with open('file.txt', 'r') as f:
-    print(f.read())
+shutil.rmtree('myfolder')
+print('Deleted: myfolder')
 ```
 """
     return {"role": "system", "content": content}
