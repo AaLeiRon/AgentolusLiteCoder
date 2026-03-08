@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agentoluslitecoder"
+version = "0.1.0"
+description = "AgentolusLiteCoder: A local, offline, pure-Python coding agent."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "requests>=2.31.0",
+]
+
+[project.scripts]
+agentoluslitecoder = "agentoluslitecoder.__main__:main"
+alc = "agentoluslitecoder.__main__:main"
+ald = "agentoluslitecoder.__main__:main_interactive"
+
+[project.urls]
+Homepage = "https://github.com/AaLeiRon/agentoluslitecoder"
+
+[tool.setuptools.packages.find]
+where = ["."]

@@ -1,0 +1,4 @@
+[console_scripts]
+agentoluslitecoder = agentoluslitecoder.__main__:main
+alc = agentoluslitecoder.__main__:main
+ald = agentoluslitecoder.__main__:main_interactive

@@ -1,0 +1,11 @@
+README.md
+pyproject.toml
+agentoluslitecoder/__init__.py
+agentoluslitecoder/__main__.py
+agentoluslitecoder/main.py
+agentoluslitecoder.egg-info/PKG-INFO
+agentoluslitecoder.egg-info/SOURCES.txt
+agentoluslitecoder.egg-info/dependency_links.txt
+agentoluslitecoder.egg-info/entry_points.txt
+agentoluslitecoder.egg-info/requires.txt
+agentoluslitecoder.egg-info/top_level.txt
