@@ -2,7 +2,14 @@ Metadata-Version: 2.4
 Name: agentoluslitecoder
 Version: 0.1.0
 Summary: AgentolusLiteCoder: A local, offline, pure-Python coding agent.
+Author-email: Aaron <aaleiron@protonmail.com>
+License: MIT
 Project-URL: Homepage, https://github.com/AaLeiRon/agentoluslitecoder
+Project-URL: Repository, https://github.com/AaLeiRon/agentoluslitecoder
+Keywords: ai,agent,coding,ollama,local-llm
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
 Requires-Python: >=3.10
 Description-Content-Type: text/markdown
 Requires-Dist: requests>=2.31.0

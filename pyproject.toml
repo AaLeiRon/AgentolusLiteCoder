@@ -8,6 +8,16 @@ version = "0.1.0"
 description = "AgentolusLiteCoder: A local, offline, pure-Python coding agent."
 readme = "README.md"
 requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+    { name = "Aaron", email = "aaleiron@protonmail.com" }
+]
+keywords = ["ai", "agent", "coding", "ollama", "local-llm"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
 dependencies = [
     "requests>=2.31.0",
 ]
@@ -19,6 +29,7 @@ ald = "agentoluslitecoder.__main__:main_interactive"
 
 [project.urls]
 Homepage = "https://github.com/AaLeiRon/agentoluslitecoder"
+Repository = "https://github.com/AaLeiRon/agentoluslitecoder"
 
 [tool.setuptools.packages.find]
 where = ["."]

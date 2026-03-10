@@ -189,6 +189,10 @@ def _bash_to_python(bash_code):
         if re.match(r'^ls$|^dir$|^ls\s|^dir\s', line):
             python_lines.append("print('\\n'.join(os.listdir('.')))")
             continue
+        # pwd
+        if re.match(r'^pwd$', line):
+            python_lines.append('print(os.getcwd())')
+            continue
         # mv
         m = re.match(r'mv\s+(\S+)\s+(\S+)', line)
         if m:
