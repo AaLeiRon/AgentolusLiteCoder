@@ -119,15 +119,21 @@ def _repair_code(code):
 
 
 def _maybe_wrap_last_expr(code):
-    """REPL-style: wrap bare last expression in print(), skip if already print()."""
+    """REPL-style: wrap bare last expression in print(), skip if already print()/exec()/eval()."""
     try:
         tree = ast.parse(code)
         if tree.body and isinstance(tree.body[-1], ast.Expr):
             last = tree.body[-1]
-            if (isinstance(last.value, ast.Call) and
-                    isinstance(last.value.func, ast.Name) and
-                    last.value.func.id == "print"):
-                return code
+            # Skip if already print(), exec(), eval(), or other void calls
+            if isinstance(last.value, ast.Call) and isinstance(last.value.func, ast.Name):
+                skip_funcs = {"print", "exec", "eval", "__cd__", "write"}
+                if last.value.func.id in skip_funcs:
+                    return code
+            # Skip if it's a method call like f.write(), os.remove(), etc.
+            if isinstance(last.value, ast.Call) and isinstance(last.value.func, ast.Attribute):
+                skip_methods = {"write", "close", "remove", "rmtree", "makedirs", "mkdir"}
+                if last.value.func.attr in skip_methods:
+                    return code
             last_src = ast.get_source_segment(code, last)
             if last_src:
                 prefix = code[:code.rfind(last_src)]
@@ -193,6 +199,25 @@ def _bash_to_python(bash_code):
         if re.match(r'^pwd$', line):
             python_lines.append('print(os.getcwd())')
             continue
+        # python file.py execution
+        m = re.match(r'(?:python3?|py)\s+(\S+\.py)(?:\s+(.*))?', line)
+        if m:
+            f = m.group(1).strip()
+            python_lines.append(f"exec(open({repr(f)}).read())")
+            continue
+        # node file.js execution
+        m = re.match(r'node\s+(\S+\.js)', line)
+        if m:
+            f = m.group(1).strip()
+            python_lines.append(f"print('[INFO] Cannot execute JS natively: {f}')")
+            continue
+        # pip install
+        m = re.match(r'pip\s+install\s+(.*)', line)
+        if m:
+            pkg = m.group(1).strip()
+            python_lines.append(f"import subprocess; subprocess.check_call(['pip', 'install', {repr(pkg)}])")
+            python_lines.append(f"print('Installed: {pkg}')")
+            continue
         # mv
         m = re.match(r'mv\s+(\S+)\s+(\S+)', line)
         if m:
@@ -256,7 +281,9 @@ def run_code(code):
         "bool": bool, "list": list, "dict": dict, "set": set, "tuple": tuple,
         "range": range, "sum": sum, "min": min, "max": max, "any": any, "all": all,
         "enumerate": enumerate, "zip": zip, "sorted": sorted, "reversed": reversed,
-        "isinstance": isinstance, "type": type,
+        "isinstance": isinstance, "type": type, "exec": exec, "eval": eval,
+        "compile": compile, "map": map, "filter": filter,
+        "hasattr": hasattr, "getattr": getattr, "setattr": setattr,
         "importlib": importlib,
         "os": mod_map["os"], "sys": mod_map["sys"], "json": mod_map["json"],
         "io": mod_map["io"], "contextlib": contextlib, "glob": mod_map["glob"],
@@ -279,6 +306,9 @@ def run_code(code):
         with contextlib.redirect_stdout(output):
             exec(code, sandbox_globals)
         res = output.getvalue().strip()
+        # Filter out stray "None" lines from void function returns
+        lines = [l for l in res.splitlines() if l.strip() != "None"]
+        res = "\n".join(lines).strip()
         return res or "[OK]"
     except Exception as e:
         return f"[EXEC ERROR] {e}"
@@ -394,6 +424,42 @@ import shutil
 shutil.rmtree('myfolder')
 print('Deleted: myfolder')
 ```
+
+Execute/run a Python file:
+```python
+exec(open('myfile.py').read())
+```
+
+Read a file and show contents:
+```python
+print(open('myfile.py').read())
+```
+
+Write multi-line content to a file:
+```python
+content = '''
+def main():
+    print("Hello, World!")
+
+if __name__ == "__main__":
+    main()
+'''
+with open('app.py', 'w') as f:
+    f.write(content.strip())
+print('Created: app.py')
+```
+
+═══════════════════════════════════════════
+CRITICAL REMINDERS — READ CAREFULLY:
+═══════════════════════════════════════════
+- NEVER use bash/shell commands like "python file.py" — use exec(open('file.py').read()) instead
+- NEVER respond with ```bash or ```shell blocks — ONLY ```python blocks
+- NEVER use shell operators (>, |, &, ;) — ONLY Python code
+- NEVER use touch, echo, cat as commands — use Python open(), print() instead
+- For file execution: exec(open('filename.py').read())
+- For file reading: print(open('filename.py').read())
+- For file writing: open('filename.py', 'w').write(content)
+- You are a PYTHON-ONLY machine. No exceptions.
 """
     return {"role": "system", "content": content}
 

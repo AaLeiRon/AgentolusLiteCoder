@@ -16,7 +16,7 @@ except ImportError:
     sys.exit(1)
 
 API_URL = os.environ.get("AGENTOLUS_API_URL", "http://127.0.0.1:11434/api/chat")
-MODEL_NAME = os.environ.get("AGENTOLUS_MODEL", "gpt-oss:120b")
+MODEL_NAME = os.environ.get("AGENTOLUS_MODEL", "glm-4.7-flash:q8_0")#"qwen3-coder:30b ")#"gpt-oss:120b")
 DEFAULT_SANDBOX = os.path.join(os.path.expanduser("~"), "agentolus_sandbox")
 
 CYAN  = "\033[36m"
@@ -108,8 +108,8 @@ def call_api(messages):
     try:
         response = requests.post(
             API_URL,
-            json={"model": MODEL_NAME, "messages": messages[-6:], "stream": False},
-            timeout=180
+            json={"model": MODEL_NAME, "messages": messages[-6:], "stream": False, "think": False},
+            timeout=360
         )
         return response.json()["message"]["content"]
     except Exception as e:
@@ -127,7 +127,7 @@ def process(user, messages, memory_file, verbose=False):
 
     code = extract_code(raw)
     if code:
-        print(f"Executing code:\n{code}\n")
+       # print(f"Executing code:\n{code}\n")
         result = run_code(code)
         messages.append({"role": "assistant", "content": f"{raw}\n\nResult:\n{result}"})
         save_memory(messages, memory_file)
