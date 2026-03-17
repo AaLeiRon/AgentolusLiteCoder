@@ -16,7 +16,7 @@ except ImportError:
     sys.exit(1)
 
 API_URL = os.environ.get("AGENTOLUS_API_URL", "http://127.0.0.1:11434/api/chat")
-MODEL_NAME = os.environ.get("AGENTOLUS_MODEL", "qwen3-coder-next:latest")
+MODEL_NAME = os.environ.get("AGENTOLUS_MODEL", "gpt-oss:120b")
 DEFAULT_SANDBOX = os.path.join(os.path.expanduser("~"), "agentolus_sandbox")
 
 CYAN  = "\033[36m"
