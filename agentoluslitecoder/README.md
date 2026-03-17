@@ -1,215 +1,262 @@
-<h1 align="center">🦀 AgentolusLiteCoder</h1>
+<h1 align="center">
+  🦀 AgentolusLiteCoder
+</h1>
 
 <p align="center">
-  <strong>Your local, offline, pure-Python coding agent</strong>
+  <strong>A local, offline, pure-Python coding agent powered by Ollama</strong>
 </p>
 
 <p align="center">
   <a href="https://python.org"><img src="https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python"></a>
-  <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-22c55e?style=for-the-badge" alt="MIT License"></a>
-  <a href="https://ollama.com"><img src="https://img.shields.io/badge/Powered_by-Ollama-f97316?style=for-the-badge" alt="Ollama"></a>
-  <a href="https://github.com/AaLeiRon/agentoluslitecoder"><img src="https://img.shields.io/badge/Version-0.1.0-a855f7?style=for-the-badge" alt="Version"></a>
+  <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-22c55e?style=for-the-badge" alt="License"></a>
+  <a href="https://ollama.com"><img src="https://img.shields.io/badge/Ollama-Powered-f97316?style=for-the-badge" alt="Ollama"></a>
+  <a href="https://github.com/AaLeiRon/agentoluslitecoder"><img src="https://img.shields.io/badge/v0.1.0-a855f7?style=for-the-badge" alt="Version"></a>
 </p>
+
+```
+    ╔══════════════════════════════════════════╗
+    ║  ◉ ─────────────────────────────────── ◉ ║
+    ║        A G E N T O L U S                 ║
+    ║      L I T E   C O D E R                 ║
+    ║  ◉ ─────────────────────────────────── ◉ ║
+    ╚══════════════════════════════════════════╝
+           │  ╔═══════════════════╗  │
+           │  ║  ▓▓  ·ALC·  ▓▓    ║  │
+           ╰──║  ▓▓  ▓▓▓▓▓  ▓▓    ║──╯
+              ║  ▓▓  ▓▓▓▓▓  ▓▓    ║
+              ╚═══════════════════╝
+               ╔═╗ ╔═╗ ╔═╗ ╔═╗ ╔═╗
+               ║█║ ║█║ ║█║ ║█║ ║█║
+               ╚═╝ ╚═╝ ╚═╝ ╚═╝ ╚═╝
+          ┌────────────────────────────┐
+          │  >>> ready to execute <<<  │
+          └────────────────────────────┘
+```
 
 <p align="center">
-  <em>No cloud. No API keys. No data leaving your computer.<br>Just you, your terminal, and a local LLM writing real code. 🔒</em>
+  No cloud &bull; No API keys &bull; No data leaving your computer<br>
+  Just you, your terminal, and a local LLM writing real code 🔒
 </p>
 
 ---
 
-<pre align="center">
-╔══════════════════════════════════════════╗
-║  ◉ ─────────────────────────────────── ◉ ║
-║        A G E N T O L U S                 ║
-║      L I T E   C O D E R                 ║
-║  ◉ ─────────────────────────────────── ◉ ║
-╚══════════════════════════════════════════╝
-       │  ╔═══════════════════╗  │
-       │  ║  ▓▓  ·ALC·  ▓▓    ║  │
-       ╰──║  ▓▓  ▓▓▓▓▓  ▓▓    ║──╯
-          ║  ▓▓  ▓▓▓▓▓  ▓▓    ║
-          ╚═══════════════════╝
-           ╔═╗ ╔═╗ ╔═╗ ╔═╗ ╔═╗
-           ║█║ ║█║ ║█║ ║█║ ║█║
-           ╚═╝ ╚═╝ ╚═╝ ╚═╝ ╚═╝
-      ┌────────────────────────────┐
-      │  >>> ready to execute <<<  │
-      └────────────────────────────┘
-</pre>
+## ✨ What is this?
+
+**AgentolusLiteCoder** is an AI coding agent that lives in your terminal. You talk to it in plain English (or German!), and it writes, executes, and manages Python code inside a safe sandbox. Everything runs locally on your machine using [Ollama](https://ollama.com) — zero cloud dependencies.
+
+```
+  🦀 Aaron [agentolus_sandbox]: create march.py that prints hello march
+  🤖 Agentolus: Created: march.py
+
+  🦀 Aaron [agentolus_sandbox]: execute march.py
+  🤖 Agentolus: hello march
+```
 
 ---
 
-## ✨ Features
-
-| | Feature | Description |
-|---|---|---|
-| 🧠 | **Local LLM Powered** | Runs on Ollama with any model — GLM, Qwen, GPT-OSS, and more |
-| 🏖️ | **Sandboxed Execution** | All code runs safely inside `~/agentolus_sandbox` |
-| 📝 | **File Operations** | Create, read, edit, delete files with natural language |
-| 📂 | **Directory Navigation** | Navigate folders, create directories, list contents |
-| ⚡ | **Auto Code Execution** | LLM generates Python → agent executes → you see results |
-| 🔄 | **Bash→Python** | Bash output auto-converted to safe Python |
-| 🧹 | **AST Sanitization** | Path injections stripped at the syntax tree level |
-| 💾 | **Memory** | Conversation context preserved across commands |
-| 🔙 | **Auto-Backup** | Files backed up before overwriting |
-| 🎭 | **Profiles** | Choose your name and emoji avatar — 🦀 🐱 👽 |
-| 🌐 | **HTTP API** | FastAPI server for Telegram, Discord, and more |
-
----
-
-## 🚀 Quick Start
-
-**Prerequisites:** Python 3.10+ and [Ollama](https://ollama.com) running locally
+## ⚡ Quick Start
 
 ```bash
+# 1. Clone & install
 git clone https://github.com/AaLeiRon/agentoluslitecoder.git
 cd agentoluslitecoder
 pip install -e .
-```
 
-Then just type:
+# 2. Make sure Ollama is running with a model
+ollama pull glm-4.7-flash:q8_0
 
-```bash
+# 3. Launch!
 ald
 ```
 
-That's it! 🎉
+**Other modes:**
 
-> **Other modes:**
-> - `alc "create a hello world script"` — single prompt mode
-> - `ald --sandbox /custom/path` — custom sandbox location  
-> - `ald --reset` — clear conversation memory
+```bash
+alc "create a hello world script"    # single prompt
+ald --sandbox /custom/path           # custom sandbox
+ald --reset                          # clear memory
+```
 
 ---
 
-## 🖥️ CLI in Action
+## 🖥️ What It Looks Like
 
 ```
-  v0.1.0  |  Hey Aaron 🦀  |  sandbox: ~/agentolus_sandbox
-  !reset = clear memory  |  !profile = change profile  |  Ctrl+C = exit
+╔══════════════════════════════════════════╗
+║        A G E N T O L U S                 ║
+║      L I T E   C O D E R                 ║
+╚══════════════════════════════════════════╝
+v0.1.0  |  Hey Aaron 🦀  |  sandbox: ~/agentolus_sandbox
 
-  🦀 Aaron [agentolus_sandbox]: create a folder called myproject
-  🤖 Agentolus: Created: myproject
+🦀 Aaron [agentolus_sandbox]: create a folder called webapp
+🤖 Agentolus: Created: webapp
 
-  🦀 Aaron [agentolus_sandbox]: cd myproject
-  🤖 Agentolus: 📂 myproject
+🦀 Aaron [agentolus_sandbox]: cd webapp
+🤖 Agentolus: 📂 webapp
 
-  🦀 Aaron [agentolus_sandbox/myproject]: create march.py that prints hello march
-  🤖 Agentolus: Created: march.py
+🦀 Aaron [agentolus_sandbox/webapp]: create app.py with a flask hello world
+🤖 Agentolus: Created: app.py
 
-  🦀 Aaron [agentolus_sandbox/myproject]: execute march.py
-  🤖 Agentolus: hello march
+🦀 Aaron [agentolus_sandbox/webapp]: execute app.py
+🤖 Agentolus: Hello World!
 
-  🦀 Aaron [agentolus_sandbox/myproject]: read march.py
-  🤖 Agentolus: print("hello march")
+🦀 Aaron [agentolus_sandbox/webapp]: read app.py
+🤖 Agentolus: print("Hello World!")
 ```
+
+---
+
+## 🎯 Features
+
+<table>
+<tr>
+<td width="50%">
+
+**🧠 Local & Offline**
+- Runs on Ollama — GLM, Qwen, GPT-OSS
+- Zero cloud, zero API keys
+- Your data never leaves your machine
+
+**📝 Natural Language Coding**
+- "Create a flask app" → creates the file
+- "Fix the bug in app.py" → reads & rewrites
+- "Execute hello.py" → runs the code
+
+**🏖️ Sandboxed & Safe**
+- Everything in `~/agentolus_sandbox`
+- AST-level path sanitization
+- Shell metacharacters blocked
+
+</td>
+<td width="50%">
+
+**⚡ Smart Execution**
+- LLM generates Python → auto-executed
+- Bash output auto-converted to Python
+- Auto-fixes common model mistakes
+
+**💾 Memory & Backup**
+- Conversation context across commands
+- Auto-backup before file overwrites
+- Full execution audit trail
+
+**🌐 Integrations**
+- HTTP API (FastAPI) for Telegram/Discord
+- Part of the Agentolus multi-agent system
+- Custom profiles with emoji avatars 🦀🐱👽
+
+</td>
+</tr>
+</table>
 
 ---
 
 ## 🎮 What Can You Say?
 
 <table>
-<tr><td>
+<tr>
+<td width="50%">
 
-### 📁 Files
-```
-create a file called hello.py with hello world
-read hello.py
-delete hello.py
-list files
-```
+**📁 Files**
+| Command | Result |
+|---|---|
+| `create hello.py with hello world` | Creates file |
+| `read hello.py` | Shows contents |
+| `delete hello.py` | Removes (with backup!) |
+| `list files` | Lists directory |
 
-</td><td>
+</td>
+<td width="50%">
 
-### 📂 Navigation
-```
-cd myproject
-cd ..
-create a folder called src
-pwd
-```
+**📂 Navigation**
+| Command | Result |
+|---|---|
+| `cd myproject` | Enter folder |
+| `cd ..` | Go up |
+| `create folder src` | Make directory |
+| `pwd` | Show location |
 
-</td></tr>
-<tr><td>
+</td>
+</tr>
+<tr>
+<td width="50%">
 
-### ⚡ Execution
-```
-execute hello.py
-create a fibonacci function and run it
-write a script that lists all .txt files
-```
+**⚡ Execution**
+| Command | Result |
+|---|---|
+| `execute hello.py` | Run Python file |
+| `create & run fibonacci` | Generate + execute |
+| `write a sorting script` | Create script |
 
-</td><td>
+</td>
+<td width="50%">
 
-### 🧠 Smart Tasks
-```
-build me a flask REST API
-fix the bug in app.py
-add error handling to main.py
-refactor this to use classes
-```
+**🧠 Smart Tasks**
+| Command | Result |
+|---|---|
+| `build a REST API` | Full project |
+| `fix bug in app.py` | Read + rewrite |
+| `add error handling` | Modify file |
 
-</td></tr>
+</td>
+</tr>
 </table>
 
 ---
 
 ## 🛡️ Security
 
-> **Your system is always protected.** Every operation is sandboxed, sanitized, and logged.
+Your system is always protected. Every operation is sandboxed, sanitized, and logged.
 
-| | Protection | How |
+| | Layer | How it works |
 |---|---|---|
-| 🔒 | **Sandboxed** | All operations confined to `~/agentolus_sandbox` |
-| 🧹 | **AST Sanitized** | Path injection attacks stripped at syntax tree level |
-| 🚫 | **No Shell Escape** | Shell metacharacters `& \| ; > <` blocked |
-| 💾 | **Auto Backup** | Files backed up before any overwrite |
+| 🔒 | **Sandbox** | All operations confined to `~/agentolus_sandbox` |
+| 🧹 | **AST Sanitization** | Path injections stripped at syntax tree level |
+| 🚫 | **Shell Blocking** | Metacharacters `& \| ; > <` are blocked |
+| 💾 | **Auto-Backup** | Files backed up before any overwrite |
 | 📝 | **Audit Trail** | Every action logged to `execution.log` |
-| 🔑 | **100% Offline** | No data ever leaves your machine |
+| 🔑 | **100% Offline** | No network calls, ever |
 
 ---
 
 ## ⚙️ Configuration
 
-### Environment Variables
-
-| Variable | Default | Description |
+| Variable | Default | What it does |
 |---|---|---|
-| `AGENTOLUS_MODEL` | `glm-4.7-flash:q8_0` | Ollama model to use |
-| `AGENTOLUS_API_URL` | `http://127.0.0.1:11434/api/chat` | Ollama API endpoint |
-| `AGENTOLUS_SANDBOX` | `~/agentolus_sandbox` | Sandbox directory path |
+| `AGENTOLUS_MODEL` | `glm-4.7-flash:q8_0` | Which Ollama model to use |
+| `AGENTOLUS_API_URL` | `http://127.0.0.1:11434/api/chat` | Ollama endpoint |
+| `AGENTOLUS_SANDBOX` | `~/agentolus_sandbox` | Where files live |
 
-### 🏆 Recommended Models
+**🏆 Tested Models:**
 
-| Model | Size | Speed | Best For |
+| Model | RAM | Speed | Sweet spot |
 |---|---|---|---|
-| `glm-4.7-flash:q8_0` | ~8GB | 🟢🟢🟢 | Daily coding tasks |
+| `glm-4.7-flash:q8_0` | ~8GB | 🟢🟢🟢 | Daily coding |
 | `qwen3:32b` | ~20GB | 🟢🟢 | Complex projects |
-| `qwen3-coder:30b` | ~20GB | 🟢🟢 | Pure code generation |
-| `gpt-oss:120b` | ~65GB | 🟢 | Maximum intelligence |
+| `qwen3-coder:30b` | ~20GB | 🟢🟢 | Code generation |
+| `gpt-oss:120b` | ~65GB | 🟢 | Max intelligence |
 
 ---
 
 ## 🌐 HTTP API
 
-> Connect AgentolusLiteCoder to **Telegram**, **Discord**, or any HTTP client
+> Connect to **Telegram**, **Discord**, or any HTTP client
 
 ```bash
 pip install fastapi uvicorn
 python litecoder_api.py
-# → Server running on http://localhost:8085
+# → http://localhost:8085
 ```
 
-**Endpoints:**
-
-| Method | Endpoint | Description |
+| Method | Endpoint | |
 |---|---|---|
-| `POST` | `/api/chat` | Send a coding prompt |
-| `POST` | `/api/reset` | Reset conversation memory |
-| `GET` | `/api/status` | Sandbox & model info |
+| `POST` | `/api/chat` | Send a prompt |
+| `POST` | `/api/reset` | Clear memory |
+| `GET` | `/api/status` | System info |
 | `GET` | `/health` | Health check |
 
-**Example:**
+<details>
+<summary>📋 Example request & response</summary>
 
 ```bash
 curl -X POST http://localhost:8085/api/chat \
@@ -225,94 +272,89 @@ curl -X POST http://localhost:8085/api/chat \
 }
 ```
 
+</details>
+
 ---
 
 ## 🏗️ How It Works
 
 ```
-  You ───prompt──→ 🧠 LLM (Ollama) ───python code──→ 🔧 Processing Pipeline ───safe code──→ 🏖️ Sandbox
-                                                          │
-                                                     extract_code()
-                                                     _sanitize_code()    ← AST sanitization
-                                                     _repair_code()      ← auto-fix mistakes
-                                                     _maybe_wrap_expr()  ← REPL-style output
+You ──→ 🧠 Ollama LLM ──→ 🔧 Processing ──→ 🏖️ Sandbox
+              │                    │                │
+         generates code      sanitizes &       executes safely
+         (Python/Bash)       converts to       in ~/sandbox
+                             safe Python
 ```
 
-All files live in `~/agentolus_sandbox/`:
+**Processing pipeline:**
+1. `extract_code()` — pulls code from LLM response
+2. `_bash_to_python()` — converts any bash to Python
+3. `_sanitize_code()` — AST-level path sanitization
+4. `_repair_code()` — auto-fixes common mistakes
+5. `exec()` — runs in sandboxed environment
 
+**Sandbox structure:**
 ```
-agentolus_sandbox/
-├── myproject/           ← your projects
-│   ├── app.py
-│   └── utils.py
-├── _backup/             ← automatic file backups
+~/agentolus_sandbox/
+├── your-projects/       ← your code lives here
+├── _backup/             ← automatic backups
 ├── memory.json          ← conversation history
-├── execution.log        ← full audit trail
-└── .profile.json        ← your name & emoji
+├── execution.log        ← audit trail
+└── .profile.json        ← name & emoji
 ```
 
 ---
 
-## 🤝 Part of the Agentolus Ecosystem
+## 🤝 Part of Agentolus
 
-AgentolusLiteCoder is the **coding brain** of the [Agentolus](https://github.com/AaLeiRon) multi-agent system:
+The coding brain of the **Agentolus** multi-agent ecosystem:
 
 ```
-  📱 Telegram / Discord
-          │
-          ▼
-  🎯 Major Agent (Orchestrator)
-          │
-          ├── 💬 Comms Agent     →  Email, Telegram, Calendar
-          ├── 🌐 Browser Agent   →  Web Browsing (PinchTab)
-          ├── 🧠 LLM Agent       →  Claude, ChatGPT, Gemini
-          ├── 📸 Social Agent    →  Instagram, LinkedIn
-          └── 🦀 Coder Agent     →  YOU ARE HERE
+📱 Telegram / Discord
+      │
+      ▼
+🎯 Major Agent (Router)
+      ├── 💬 Comms    →  Email, Calendar, Messaging
+      ├── 🌐 Browser  →  Web Browsing & Search
+      ├── 🧠 LLM      →  Claude, ChatGPT, Gemini
+      ├── 📸 Social   →  Instagram, LinkedIn
+      └── 🦀 Coder    →  ← YOU ARE HERE
 ```
 
 ---
 
-## 📋 CLI Commands
+## 📋 CLI Reference
 
-| Command | What it does |
+| Command | |
 |---|---|
-| `!reset` | 🧹 Clear conversation memory |
-| `!profile` | 🎭 Change your name and emoji |
-| `pwd` | 📂 Show current directory |
-| `Ctrl+C` | 👋 Exit gracefully |
+| `!reset` | 🧹 Clear memory |
+| `!profile` | 🎭 Change name & emoji |
+| `pwd` | 📂 Current directory |
+| `Ctrl+C` | 👋 Exit |
 
 ---
 
 ## 🗺️ Roadmap
 
 - [x] Sandboxed code execution
-- [x] File and directory operations
-- [x] Bash to Python auto-conversion
+- [x] File & directory operations  
+- [x] Bash → Python conversion
 - [x] AST path sanitization
 - [x] Conversation memory
-- [x] HTTP API for integrations
+- [x] HTTP API
 - [ ] Agentic loop (Plan → Code → Test → Fix)
 - [ ] Project context scanning
-- [ ] Auto-testing (pytest)
+- [ ] Auto-testing with pytest
 - [ ] Dependency detection
-- [ ] Multi-file project generation
-
----
-
-## 📄 License
-
-[MIT](LICENSE) — do whatever you want with it! 🎉
+- [ ] Multi-file project builder
 
 ---
 
 <p align="center">
-  <strong>Built with ❤️ and 🦀 by <a href="https://github.com/AaLeiRon">AaLeiRon</a></strong>
-  <br>
-  <em>No clouds were harmed in the making of this agent</em> ☁️❌
+  <a href="LICENSE">MIT License</a> — do whatever you want 🎉
 </p>
 
-<pre align="center">
-┌────────────────────────────┐
-│   >>> happy coding! <<<    │
-└────────────────────────────┘
-</pre>
+<p align="center">
+  Built with ❤️ and 🦀 by <a href="https://github.com/AaLeiRon">AaLeiRon</a><br>
+  <sub>No clouds were harmed in the making of this agent ☁️❌</sub>
+</p>
