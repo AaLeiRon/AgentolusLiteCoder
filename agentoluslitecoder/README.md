@@ -1,17 +1,11 @@
-<h1 align="center">
-  🦀 AgentolusLiteCoder
-</h1>
+# 🦀 AgentolusLiteCoder
 
-<p align="center">
-  <strong>A local, offline, pure-Python coding agent powered by Ollama</strong>
-</p>
+**A local, offline, pure-Python coding agent powered by Ollama**
 
-<p align="center">
-  <a href="https://python.org"><img src="https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python"></a>
-  <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-22c55e?style=for-the-badge" alt="License"></a>
-  <a href="https://ollama.com"><img src="https://img.shields.io/badge/Ollama-Powered-f97316?style=for-the-badge" alt="Ollama"></a>
-  <a href="https://github.com/AaLeiRon/agentoluslitecoder"><img src="https://img.shields.io/badge/v0.1.0-a855f7?style=for-the-badge" alt="Version"></a>
-</p>
+[![Python 3.10+](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
+[![License: MIT](https://img.shields.io/badge/License-MIT-22c55e?style=for-the-badge)](https://opensource.org/licenses/MIT)
+[![Ollama](https://img.shields.io/badge/Ollama-Powered-f97316?style=for-the-badge)](https://ollama.com)
+[![Version](https://img.shields.io/badge/v0.1.0-a855f7?style=for-the-badge)](https://github.com/AaLeiRon/agentoluslitecoder)
 
 ```
     ╔══════════════════════════════════════════╗
@@ -33,23 +27,21 @@
           └────────────────────────────┘
 ```
 
-<p align="center">
-  No cloud &bull; No API keys &bull; No data leaving your computer<br>
-  Just you, your terminal, and a local LLM writing real code 🔒
-</p>
+> No cloud • No API keys • No data leaving your computer
+> Just you, your terminal, and a local LLM writing real code 🔒
 
 ---
 
 ## ✨ What is this?
 
-**AgentolusLiteCoder** is an AI coding agent that lives in your terminal. You talk to it in plain English (or German!), and it writes, executes, and manages Python code inside a safe sandbox. Everything runs locally on your machine using [Ollama](https://ollama.com) — zero cloud dependencies.
+**AgentolusLiteCoder** is an AI coding agent that lives in your terminal. You talk to it in plain English (or German!), and it writes, executes, and manages Python code inside a safe sandbox. Everything runs locally using [Ollama](https://ollama.com) — zero cloud dependencies.
 
 ```
-  🦀 Aaron [agentolus_sandbox]: create march.py that prints hello march
-  🤖 Agentolus: Created: march.py
+🦀 Aaron [agentolus_sandbox]: create march.py that prints hello march
+🤖 Agentolus: Created: march.py
 
-  🦀 Aaron [agentolus_sandbox]: execute march.py
-  🤖 Agentolus: hello march
+🦀 Aaron [agentolus_sandbox]: execute march.py
+🤖 Agentolus: hello march
 ```
 
 ---
@@ -108,56 +100,26 @@ v0.1.0  |  Hey Aaron 🦀  |  sandbox: ~/agentolus_sandbox
 
 ## 🎯 Features
 
-<table>
-<tr>
-<td width="50%">
+🧠 **Local & Offline** — Runs on Ollama with GLM, Qwen, GPT-OSS, and more. Zero cloud, zero API keys.
 
-**🧠 Local & Offline**
-- Runs on Ollama — GLM, Qwen, GPT-OSS
-- Zero cloud, zero API keys
-- Your data never leaves your machine
+📝 **Natural Language Coding** — "Create a flask app" → creates the file. "Fix the bug" → reads & rewrites.
 
-**📝 Natural Language Coding**
-- "Create a flask app" → creates the file
-- "Fix the bug in app.py" → reads & rewrites
-- "Execute hello.py" → runs the code
+🏖️ **Sandboxed & Safe** — Everything in `~/agentolus_sandbox`. AST-level path sanitization. Shell blocked.
 
-**🏖️ Sandboxed & Safe**
-- Everything in `~/agentolus_sandbox`
-- AST-level path sanitization
-- Shell metacharacters blocked
+⚡ **Smart Execution** — LLM generates Python → auto-executed. Bash auto-converted to Python.
 
-</td>
-<td width="50%">
+💾 **Memory & Backup** — Conversation context preserved. Auto-backup before overwrites. Full audit trail.
 
-**⚡ Smart Execution**
-- LLM generates Python → auto-executed
-- Bash output auto-converted to Python
-- Auto-fixes common model mistakes
+🌐 **Integrations** — HTTP API (FastAPI) for Telegram, Discord. Part of the Agentolus multi-agent system.
 
-**💾 Memory & Backup**
-- Conversation context across commands
-- Auto-backup before file overwrites
-- Full execution audit trail
-
-**🌐 Integrations**
-- HTTP API (FastAPI) for Telegram/Discord
-- Part of the Agentolus multi-agent system
-- Custom profiles with emoji avatars 🦀🐱👽
-
-</td>
-</tr>
-</table>
+🎭 **Profiles** — Choose your name and emoji avatar — 🦀 🐱 👽
 
 ---
 
 ## 🎮 What Can You Say?
 
-<table>
-<tr>
-<td width="50%">
+### 📁 Files
 
-**📁 Files**
 | Command | Result |
 |---|---|
 | `create hello.py with hello world` | Creates file |
@@ -165,10 +127,8 @@ v0.1.0  |  Hey Aaron 🦀  |  sandbox: ~/agentolus_sandbox
 | `delete hello.py` | Removes (with backup!) |
 | `list files` | Lists directory |
 
-</td>
-<td width="50%">
+### 📂 Navigation
 
-**📂 Navigation**
 | Command | Result |
 |---|---|
 | `cd myproject` | Enter folder |
@@ -176,31 +136,22 @@ v0.1.0  |  Hey Aaron 🦀  |  sandbox: ~/agentolus_sandbox
 | `create folder src` | Make directory |
 | `pwd` | Show location |
 
-</td>
-</tr>
-<tr>
-<td width="50%">
+### ⚡ Execution
 
-**⚡ Execution**
 | Command | Result |
 |---|---|
 | `execute hello.py` | Run Python file |
 | `create & run fibonacci` | Generate + execute |
 | `write a sorting script` | Create script |
 
-</td>
-<td width="50%">
+### 🧠 Smart Tasks
 
-**🧠 Smart Tasks**
 | Command | Result |
 |---|---|
 | `build a REST API` | Full project |
 | `fix bug in app.py` | Read + rewrite |
 | `add error handling` | Modify file |
-
-</td>
-</tr>
-</table>
+| `refactor to use classes` | Restructure code |
 
 ---
 
@@ -227,7 +178,7 @@ Your system is always protected. Every operation is sandboxed, sanitized, and lo
 | `AGENTOLUS_API_URL` | `http://127.0.0.1:11434/api/chat` | Ollama endpoint |
 | `AGENTOLUS_SANDBOX` | `~/agentolus_sandbox` | Where files live |
 
-**🏆 Tested Models:**
+### 🏆 Tested Models
 
 | Model | RAM | Speed | Sweet spot |
 |---|---|---|---|
@@ -240,7 +191,7 @@ Your system is always protected. Every operation is sandboxed, sanitized, and lo
 
 ## 🌐 HTTP API
 
-> Connect to **Telegram**, **Discord**, or any HTTP client
+Connect to **Telegram**, **Discord**, or any HTTP client:
 
 ```bash
 pip install fastapi uvicorn
@@ -248,15 +199,14 @@ python litecoder_api.py
 # → http://localhost:8085
 ```
 
-| Method | Endpoint | |
+| Method | Endpoint | Description |
 |---|---|---|
 | `POST` | `/api/chat` | Send a prompt |
 | `POST` | `/api/reset` | Clear memory |
 | `GET` | `/api/status` | System info |
 | `GET` | `/health` | Health check |
 
-<details>
-<summary>📋 Example request & response</summary>
+**Example:**
 
 ```bash
 curl -X POST http://localhost:8085/api/chat \
@@ -272,8 +222,6 @@ curl -X POST http://localhost:8085/api/chat \
 }
 ```
 
-</details>
-
 ---
 
 ## 🏗️ How It Works
@@ -287,6 +235,7 @@ You ──→ 🧠 Ollama LLM ──→ 🔧 Processing ──→ 🏖️ Sandbo
 ```
 
 **Processing pipeline:**
+
 1. `extract_code()` — pulls code from LLM response
 2. `_bash_to_python()` — converts any bash to Python
 3. `_sanitize_code()` — AST-level path sanitization
@@ -294,6 +243,7 @@ You ──→ 🧠 Ollama LLM ──→ 🔧 Processing ──→ 🏖️ Sandbo
 5. `exec()` — runs in sandboxed environment
 
 **Sandbox structure:**
+
 ```
 ~/agentolus_sandbox/
 ├── your-projects/       ← your code lives here
@@ -318,14 +268,14 @@ The coding brain of the **Agentolus** multi-agent ecosystem:
       ├── 🌐 Browser  →  Web Browsing & Search
       ├── 🧠 LLM      →  Claude, ChatGPT, Gemini
       ├── 📸 Social   →  Instagram, LinkedIn
-      └── 🦀 Coder    →  ← YOU ARE HERE
+      └── 🦀 Coder    →  YOU ARE HERE
 ```
 
 ---
 
 ## 📋 CLI Reference
 
-| Command | |
+| Command | Description |
 |---|---|
 | `!reset` | 🧹 Clear memory |
 | `!profile` | 🎭 Change name & emoji |
@@ -337,7 +287,7 @@ The coding brain of the **Agentolus** multi-agent ecosystem:
 ## 🗺️ Roadmap
 
 - [x] Sandboxed code execution
-- [x] File & directory operations  
+- [x] File & directory operations
 - [x] Bash → Python conversion
 - [x] AST path sanitization
 - [x] Conversation memory
@@ -350,11 +300,12 @@ The coding brain of the **Agentolus** multi-agent ecosystem:
 
 ---
 
-<p align="center">
-  <a href="LICENSE">MIT License</a> — do whatever you want 🎉
-</p>
+## 📄 License
 
-<p align="center">
-  Built with ❤️ and 🦀 by <a href="https://github.com/AaLeiRon">AaLeiRon</a><br>
-  <sub>No clouds were harmed in the making of this agent ☁️❌</sub>
-</p>
+[MIT](LICENSE) — do whatever you want 🎉
+
+---
+
+Built with ❤️ and 🦀 by [AaLeiRon](https://github.com/AaLeiRon)
+
+*No clouds were harmed in the making of this agent* ☁️❌
