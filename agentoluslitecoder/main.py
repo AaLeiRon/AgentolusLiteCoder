@@ -498,3 +498,179 @@ def list_files(path="."):
         return "\n".join(files) if files else "[EMPTY]"
     except Exception as e:
         return f"[ERROR] list_files: {e}"
+
+
+# ── Git Integration ────────────────────────────────────────────
+
+import subprocess as _subprocess
+
+# Allowed git commands (whitelist for safety)
+_GIT_ALLOWED = {
+    "status", "add", "commit", "push", "pull", "log", "branch",
+    "checkout", "switch", "diff", "remote", "init", "clone",
+    "stash", "merge", "fetch", "reset", "tag",
+}
+
+# Dangerous patterns that require confirmation
+_GIT_DANGEROUS = ["push --force", "reset --hard", "clean -f", "branch -D"]
+
+# Files that should never be committed
+_GIT_SECRETS_PATTERNS = [
+    r'api[_-]?key', r'secret', r'password', r'token',
+    r'sk-[a-zA-Z0-9]', r'AKIA[A-Z0-9]',
+]
+
+
+def git_config_path():
+    return os.path.join(SANDBOX_PATH, ".git_config.json")
+
+
+def load_git_config():
+    path = git_config_path()
+    if os.path.exists(path):
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {}
+
+
+def save_git_config(config):
+    with open(git_config_path(), "w", encoding="utf-8") as f:
+        json.dump(config, f, indent=2)
+
+
+def is_git_repo(path=None):
+    """Check if the sandbox or given path is a git repo."""
+    check_path = path or SANDBOX_PATH
+    return os.path.isdir(os.path.join(check_path, ".git"))
+
+
+def ensure_gitignore():
+    """Create or update .gitignore with safe defaults."""
+    gitignore_path = os.path.join(SANDBOX_PATH, ".gitignore")
+    defaults = [
+        "memory.json",
+        ".profile.json",
+        ".git_config.json",
+        "_backup/",
+        "execution.log",
+        ".cwd",
+        "__pycache__/",
+        "*.pyc",
+        ".env",
+        "*.key",
+        "*.pem",
+    ]
+
+    existing = set()
+    if os.path.exists(gitignore_path):
+        with open(gitignore_path, "r", encoding="utf-8") as f:
+            existing = {line.strip() for line in f if line.strip() and not line.startswith("#")}
+
+    new_entries = [d for d in defaults if d not in existing]
+    if new_entries:
+        with open(gitignore_path, "a", encoding="utf-8") as f:
+            if existing:
+                f.write("\n")
+            f.write("# Auto-added by AgentolusLiteCoder\n")
+            for entry in new_entries:
+                f.write(entry + "\n")
+
+    return gitignore_path
+
+
+def scan_for_secrets(path=None):
+    """Scan staged files for potential secrets/API keys."""
+    check_path = path or get_cwd()
+    warnings = []
+
+    try:
+        result = _subprocess.run(
+            ["git", "diff", "--cached", "--name-only"],
+            capture_output=True, text=True, cwd=check_path, timeout=10,
+        )
+        staged_files = [f.strip() for f in result.stdout.strip().split("\n") if f.strip()]
+    except Exception:
+        return []
+
+    for filename in staged_files:
+        full_path = os.path.join(check_path, filename)
+        if not os.path.isfile(full_path):
+            continue
+        try:
+            content = open(full_path, "r", encoding="utf-8", errors="ignore").read()
+            for pattern in _GIT_SECRETS_PATTERNS:
+                if re.search(pattern, content, re.IGNORECASE):
+                    warnings.append(f"⚠️  Possible secret in `{filename}` (pattern: {pattern})")
+                    break
+        except Exception:
+            continue
+
+    return warnings
+
+
+def run_git(command_str):
+    """Execute a git command safely within the sandbox."""
+    command_str = command_str.strip()
+
+    # Parse the git subcommand
+    parts = command_str.split()
+    if not parts:
+        return "[ERROR] Empty git command"
+
+    # Remove leading "git" if present
+    if parts[0] == "git":
+        parts = parts[1:]
+    if not parts:
+        return "[ERROR] Empty git command"
+
+    subcommand = parts[0]
+
+    # Whitelist check
+    if subcommand not in _GIT_ALLOWED:
+        return f"[BLOCKED] Git subcommand '{subcommand}' is not allowed.\nAllowed: {', '.join(sorted(_GIT_ALLOWED))}"
+
+    # Dangerous command check
+    full_cmd = " ".join(parts)
+    for dangerous in _GIT_DANGEROUS:
+        if dangerous in full_cmd:
+            return f"[BLOCKED] Dangerous command: 'git {full_cmd}'\nUse with caution — this command is blocked for safety."
+
+    # Secret scan before commit
+    if subcommand == "commit":
+        warnings = scan_for_secrets()
+        if warnings:
+            warning_text = "\n".join(warnings)
+            return f"[SECRET WARNING] Potential secrets detected in staged files:\n{warning_text}\n\nRemove secrets before committing, or add files to .gitignore."
+
+    # Execute
+    cwd = get_cwd()
+    try:
+        result = _subprocess.run(
+            ["git"] + parts,
+            capture_output=True, text=True, cwd=cwd, timeout=60,
+        )
+        output = ""
+        if result.stdout.strip():
+            output += result.stdout.strip()
+        if result.stderr.strip():
+            # Git often writes normal info to stderr
+            if output:
+                output += "\n"
+            output += result.stderr.strip()
+        if not output:
+            output = "[OK]"
+
+        if result.returncode != 0:
+            return f"[GIT ERROR] (exit {result.returncode})\n{output}"
+        return output
+
+    except _subprocess.TimeoutExpired:
+        return "[ERROR] Git command timed out (60s)"
+    except FileNotFoundError:
+        return "[ERROR] Git is not installed. Install it from https://git-scm.com/"
+    except Exception as e:
+        return f"[ERROR] Git failed: {e}"
+

@@ -6,7 +6,9 @@ import argparse
 
 from .main import (
     load_system_prompt, extract_code, run_code, write_file, read_file,
-    list_files, log, cwd_display
+    list_files, log, cwd_display,
+    run_git, is_git_repo, load_git_config, save_git_config,
+    ensure_gitignore, SANDBOX_PATH,
 )
 
 try:
@@ -18,6 +20,15 @@ except ImportError:
 API_URL = os.environ.get("AGENTOLUS_API_URL", "http://127.0.0.1:11434/api/chat")
 MODEL_NAME = os.environ.get("AGENTOLUS_MODEL", "glm-4.7-flash:q8_0")
 DEFAULT_SANDBOX = os.path.join(os.path.expanduser("~"), "agentolus_sandbox")
+
+# Models available for selection at startup
+AVAILABLE_MODELS = [
+    ("glm-4.7-flash:q8_0", "~8GB", "⚡⚡⚡ Fast daily coding"),
+    ("qwen3:32b", "~20GB", "⚡⚡  Complex projects"),
+    ("qwen3-coder:30b", "~20GB", "⚡⚡  Code specialist"),
+    ("qwen3.5:122b", "~75GB", "⚡    Large reasoning model"),
+    ("gpt-oss:120b", "~65GB", "⚡    Maximum intelligence"),
+]
 
 CYAN  = "\033[36m"
 GRAY  = "\033[90m"
@@ -52,6 +63,163 @@ EMOJI_CHOICES = {
     "2": ("🐱", "Cat"),
     "3": ("👽", "Alien"),
 }
+
+
+def choose_model():
+    """Let the user pick a model at startup."""
+    global MODEL_NAME
+
+    print(f"{CYAN}  Select your model:{RESET}\n")
+    for i, (name, size, desc) in enumerate(AVAILABLE_MODELS, 1):
+        default_marker = f" {GREEN}← default{RESET}" if name == MODEL_NAME else ""
+        print(f"    [{i}] {name}  ({size})  {desc}{default_marker}")
+    print()
+
+    try:
+        choice = input(f"  Your choice (1-{len(AVAILABLE_MODELS)}) or Enter for default: ").strip()
+    except KeyboardInterrupt:
+        print()
+        return MODEL_NAME
+
+    if choice and choice.isdigit():
+        idx = int(choice) - 1
+        if 0 <= idx < len(AVAILABLE_MODELS):
+            MODEL_NAME = AVAILABLE_MODELS[idx][0]
+            print(f"\n{GREEN}  Selected: {MODEL_NAME}{RESET}\n")
+            return MODEL_NAME
+
+    print(f"\n{GREEN}  Using default: {MODEL_NAME}{RESET}\n")
+    return MODEL_NAME
+
+
+def choose_git_repo():
+    """Git repository setup at startup."""
+    config = load_git_config()
+    sandbox = SANDBOX_PATH
+
+    # Check if already a git repo
+    if is_git_repo():
+        # Get current remote
+        try:
+            result = __import__("subprocess").run(
+                ["git", "remote", "-v"],
+                capture_output=True, text=True, cwd=sandbox, timeout=5,
+            )
+            remote_info = result.stdout.strip()
+        except Exception:
+            remote_info = ""
+
+        if remote_info:
+            # Extract first remote URL
+            first_line = remote_info.split("\n")[0]
+            remote_url = first_line.split("\t")[1].split(" ")[0] if "\t" in first_line else "unknown"
+            print(f"{GREEN}  🔗 Git: connected to {remote_url}{RESET}")
+        else:
+            print(f"{GREEN}  🔗 Git: local repo (no remote){RESET}")
+
+        print(f"{GRAY}  Use !git status, !git push, etc. in chat{RESET}\n")
+        return True
+
+    # Not a git repo — ask user
+    print(f"{CYAN}  🔗 Git Repository:{RESET}\n")
+    print(f"    [1] Clone a remote repository")
+    print(f"    [2] Init new local repo")
+    print(f"    [3] Skip (no git)")
+    print()
+
+    try:
+        choice = input("  Your choice (1-3) or Enter to skip: ").strip()
+    except KeyboardInterrupt:
+        print()
+        return False
+
+    if choice == "1":
+        try:
+            url = input(f"  Repository URL: ").strip()
+        except KeyboardInterrupt:
+            print()
+            return False
+
+        if not url:
+            print(f"{YELLOW}  ⚠️  No URL provided, skipping git{RESET}\n")
+            return False
+
+        print(f"{CYAN}  ⏳ Cloning {url}...{RESET}")
+        try:
+            # Clone into a temp dir, then move contents to sandbox
+            import tempfile
+            temp_dir = tempfile.mkdtemp()
+            result = __import__("subprocess").run(
+                ["git", "clone", url, temp_dir],
+                capture_output=True, text=True, timeout=120,
+            )
+            if result.returncode != 0:
+                print(f"{YELLOW}  ⚠️  Clone failed: {result.stderr.strip()}{RESET}\n")
+                return False
+
+            # Move .git and files to sandbox
+            import shutil
+            git_dir = os.path.join(temp_dir, ".git")
+            target_git = os.path.join(sandbox, ".git")
+            if os.path.exists(target_git):
+                shutil.rmtree(target_git)
+            shutil.move(git_dir, target_git)
+
+            # Copy files (don't overwrite existing sandbox files)
+            for item in os.listdir(temp_dir):
+                src = os.path.join(temp_dir, item)
+                dst = os.path.join(sandbox, item)
+                if not os.path.exists(dst):
+                    if os.path.isdir(src):
+                        shutil.copytree(src, dst)
+                    else:
+                        shutil.copy2(src, dst)
+
+            shutil.rmtree(temp_dir, ignore_errors=True)
+            ensure_gitignore()
+            save_git_config({"remote_url": url, "connected": True})
+            print(f"{GREEN}  ✅ Cloned and connected to {url}{RESET}\n")
+            return True
+
+        except Exception as e:
+            print(f"{YELLOW}  ⚠️  Clone failed: {e}{RESET}\n")
+            return False
+
+    elif choice == "2":
+        try:
+            result = __import__("subprocess").run(
+                ["git", "init"],
+                capture_output=True, text=True, cwd=sandbox, timeout=10,
+            )
+            if result.returncode == 0:
+                ensure_gitignore()
+                save_git_config({"connected": True, "local_only": True})
+                print(f"{GREEN}  ✅ Initialized git repo in sandbox{RESET}\n")
+
+                # Ask for remote
+                try:
+                    url = input(f"  Add remote URL? (Enter to skip): ").strip()
+                except KeyboardInterrupt:
+                    url = ""
+
+                if url:
+                    __import__("subprocess").run(
+                        ["git", "remote", "add", "origin", url],
+                        capture_output=True, text=True, cwd=sandbox, timeout=10,
+                    )
+                    save_git_config({"remote_url": url, "connected": True})
+                    print(f"{GREEN}  ✅ Remote added: {url}{RESET}\n")
+
+                return True
+            else:
+                print(f"{YELLOW}  ⚠️  Git init failed: {result.stderr.strip()}{RESET}\n")
+                return False
+        except FileNotFoundError:
+            print(f"{YELLOW}  ⚠️  Git not installed! Get it from https://git-scm.com/{RESET}\n")
+            return False
+
+    print(f"{GRAY}  Skipping git setup{RESET}\n")
+    return False
 
 
 def ensure_model_loaded():
@@ -264,7 +432,9 @@ def _interactive(messages, memory_file, verbose=False):
     sandbox_path = os.path.dirname(memory_file)
     profile = load_profile(sandbox_path)
     print(BANNER)
+    choose_model()
     ensure_model_loaded()
+    choose_git_repo()
     print()
     if profile is None:
         profile = first_time_setup(sandbox_path)
@@ -272,7 +442,7 @@ def _interactive(messages, memory_file, verbose=False):
     emoji = profile.get("emoji", "🦀")
     print(f"{CYAN}  v0.1.0  |  Hey {name} {emoji}  |  sandbox: {sandbox_path}")
     print(f"  model: {MODEL_NAME}{RESET}")
-    print(f"{GRAY}  !reset = clear memory  |  !profile = change profile  |  Ctrl+C = exit{RESET}\n")
+    print(f"{GRAY}  !reset = clear memory  |  !profile = change profile  |  !model = switch model  |  !git = git commands  |  Ctrl+C = exit{RESET}\n")
     while True:
         try:
             user = input(f"{emoji} {name} [{cwd_display()}]: ").strip()
@@ -296,6 +466,18 @@ def _interactive(messages, memory_file, verbose=False):
             profile = first_time_setup(sandbox_path)
             name = profile.get("name", "User")
             emoji = profile.get("emoji", "🦀")
+            continue
+        if user == "!model":
+            choose_model()
+            ensure_model_loaded()
+            continue
+        if user.startswith("!git"):
+            git_cmd = user[4:].strip()
+            if not git_cmd:
+                print(f"{CYAN}  Git commands: !git status, !git add ., !git commit \"msg\", !git push, !git pull, !git log, !git diff, !git branch{RESET}\n")
+                continue
+            result = run_git(git_cmd)
+            print(f"🔗 {result}\n")
             continue
         process(user, messages, memory_file, verbose=verbose)
 
