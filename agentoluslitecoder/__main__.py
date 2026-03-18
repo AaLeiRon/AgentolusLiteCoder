@@ -16,11 +16,13 @@ except ImportError:
     sys.exit(1)
 
 API_URL = os.environ.get("AGENTOLUS_API_URL", "http://127.0.0.1:11434/api/chat")
-MODEL_NAME = os.environ.get("AGENTOLUS_MODEL", "glm-4.7-flash:q8_0")#"qwen3-coder:30b ")#"gpt-oss:120b")
+MODEL_NAME = os.environ.get("AGENTOLUS_MODEL", "glm-4.7-flash:q8_0")
 DEFAULT_SANDBOX = os.path.join(os.path.expanduser("~"), "agentolus_sandbox")
 
 CYAN  = "\033[36m"
 GRAY  = "\033[90m"
+GREEN = "\033[32m"
+YELLOW = "\033[33m"
 RESET = "\033[0m"
 
 BANNER = (
@@ -50,6 +52,56 @@ EMOJI_CHOICES = {
     "2": ("🐱", "Cat"),
     "3": ("👽", "Alien"),
 }
+
+
+def ensure_model_loaded():
+    """Pre-load the model in Ollama if not already running."""
+    ollama_base = API_URL.replace("/api/chat", "")
+
+    # Check if Ollama is reachable
+    try:
+        resp = requests.get(f"{ollama_base}/api/tags", timeout=5)
+        if resp.status_code != 200:
+            print(f"{YELLOW}  ⚠️  Ollama not reachable at {ollama_base}{RESET}")
+            return False
+    except Exception:
+        print(f"{YELLOW}  ⚠️  Ollama not running. Start it first!{RESET}")
+        return False
+
+    # Check if model is already loaded
+    try:
+        resp = requests.get(f"{ollama_base}/api/ps", timeout=5)
+        if resp.status_code == 200:
+            running = resp.json().get("models", [])
+            for m in running:
+                if m.get("name", "").startswith(MODEL_NAME.split(":")[0]):
+                    print(f"{GREEN}  ✅ Model {MODEL_NAME} ready{RESET}")
+                    return True
+    except Exception:
+        pass
+
+    # Pre-warm: send a tiny request to load the model
+    print(f"{CYAN}  ⏳ Loading model {MODEL_NAME}...{RESET}")
+    try:
+        resp = requests.post(
+            API_URL,
+            json={
+                "model": MODEL_NAME,
+                "messages": [{"role": "user", "content": "hi"}],
+                "stream": False,
+                "think": False,
+            },
+            timeout=120,
+        )
+        if resp.status_code == 200:
+            print(f"{GREEN}  ✅ Model {MODEL_NAME} loaded!{RESET}")
+            return True
+        else:
+            print(f"{YELLOW}  ⚠️  Failed to load model: {resp.status_code}{RESET}")
+            return False
+    except Exception as e:
+        print(f"{YELLOW}  ⚠️  Failed to load model: {e}{RESET}")
+        return False
 
 
 def load_profile(sandbox_path):
@@ -108,8 +160,13 @@ def call_api(messages):
     try:
         response = requests.post(
             API_URL,
-            json={"model": MODEL_NAME, "messages": messages[-6:], "stream": False, "think": False},
-            timeout=360
+            json={
+                "model": MODEL_NAME,
+                "messages": messages[-6:],
+                "stream": False,
+                "think": False,
+            },
+            timeout=300,
         )
         return response.json()["message"]["content"]
     except Exception as e:
@@ -127,7 +184,6 @@ def process(user, messages, memory_file, verbose=False):
 
     code = extract_code(raw)
     if code:
-       # print(f"Executing code:\n{code}\n")
         result = run_code(code)
         messages.append({"role": "assistant", "content": f"{raw}\n\nResult:\n{result}"})
         save_memory(messages, memory_file)
@@ -173,6 +229,7 @@ def main():
         print("Memory cleared.")
         return
 
+    ensure_model_loaded()
     messages = load_memory(memory_file)
 
     if args.prompt:
@@ -207,11 +264,14 @@ def _interactive(messages, memory_file, verbose=False):
     sandbox_path = os.path.dirname(memory_file)
     profile = load_profile(sandbox_path)
     print(BANNER)
+    ensure_model_loaded()
+    print()
     if profile is None:
         profile = first_time_setup(sandbox_path)
     name = profile.get("name", "User")
     emoji = profile.get("emoji", "🦀")
-    print(f"{CYAN}  v0.1.0  |  Hey {name} {emoji}  |  sandbox: {sandbox_path}{RESET}")
+    print(f"{CYAN}  v0.1.0  |  Hey {name} {emoji}  |  sandbox: {sandbox_path}")
+    print(f"  model: {MODEL_NAME}{RESET}")
     print(f"{GRAY}  !reset = clear memory  |  !profile = change profile  |  Ctrl+C = exit{RESET}\n")
     while True:
         try:
