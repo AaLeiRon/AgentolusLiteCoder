@@ -3,9 +3,6 @@
 **A local, offline, pure-Python coding agent powered by Ollama**
 
 
-https://github.com/user-attachments/assets/beea14dd-ff66-4374-8f87-0d48a813d000
-
-
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-22c55e?style=for-the-badge)](https://opensource.org/licenses/MIT)
 [![Ollama](https://img.shields.io/badge/Ollama-Powered-f97316?style=for-the-badge)](https://ollama.com)
@@ -304,6 +301,11 @@ The coding brain of the **Agentolus** multi-agent ecosystem:
 
 ---
 
+https://github.com/user-attachments/assets/beea14dd-ff66-4374-8f87-0d48a813d000
+
+
+
+---
 ## 📄 License
 
 [MIT](LICENSE) — do whatever you want 🎉
