@@ -168,6 +168,7 @@ def _bash_to_python(bash_code):
         if m:
             d = m.group(1).strip()
             python_lines.append(f"os.makedirs({repr(d)}, exist_ok=True)")
+            python_lines.append(f"open(os.path.join({repr(d)}, '.gitkeep'), 'a').close()")
             python_lines.append(f"print('Created: {d}')")
             continue
         # echo "text" > file
@@ -402,6 +403,7 @@ Create folder and enter it:
 ```python
 import os
 os.makedirs('newFolder', exist_ok=True)
+open(os.path.join('newFolder', '.gitkeep'), 'a').close()
 __cd__("newFolder")
 ```
 
