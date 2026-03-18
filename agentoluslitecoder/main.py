@@ -108,6 +108,7 @@ def _repair_code(code):
     new_lines = []
     makedirs_done = set()
     for line in lines:
+        # Auto-insert makedirs before open() with subdirectory paths
         m = re.match(r'.*open\s*\(\s*["\']([^"\']+/[^"\']+)["\']\s*,\s*["\'][wa]["\']', line)
         if m:
             folder = os.path.dirname(m.group(1))
@@ -115,6 +116,17 @@ def _repair_code(code):
                 new_lines.append(f"import os; os.makedirs({repr(folder)}, exist_ok=True)  # auto-inserted")
                 makedirs_done.add(folder)
         new_lines.append(line)
+
+        # Auto-insert .gitkeep after every os.makedirs call
+        mk = re.match(r'.*os\.makedirs\s*\(\s*["\']([^"\']+)["\']\s*', line)
+        if not mk:
+            mk = re.match(r'.*os\.makedirs\s*\(\s*(\w+)\s*', line)
+        if mk:
+            folder_name = mk.group(1)
+            # Only for string literals, not variables
+            if not folder_name.startswith(('os.', 'self.', '__')):
+                new_lines.append(f"open(os.path.join({repr(folder_name)}, '.gitkeep'), 'a').close()  # auto-gitkeep")
+
     return '\n'.join(new_lines)
 
 
@@ -274,7 +286,7 @@ def run_code(code):
         set_cwd(new)
         os.chdir(new)
         rel = os.path.relpath(new, SANDBOX_PATH).replace("\\", "/")
-        print(f"📂 {rel if rel != '.' else '(sandbox root)'}") 
+        print(f"📂 {rel if rel != '.' else '(sandbox root)'}")
 
     builtins = {
         "print": print,

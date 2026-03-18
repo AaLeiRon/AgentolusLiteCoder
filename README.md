@@ -280,7 +280,9 @@ The coding brain of the **Agentolus** multi-agent ecosystem:
 |---|---|
 | `!reset` | 🧹 Clear memory |
 | `!profile` | 🎭 Change name & emoji |
+| `!git` |  🚂 git commands |
 | `pwd` | 📂 Current directory |
+| `!model` | 🤖 switch model |
 | `Ctrl+C` | 👋 Exit |
 
 ---
